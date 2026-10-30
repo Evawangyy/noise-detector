@@ -1,0 +1,6 @@
+For the advanced version (integrating the ADC0832 and sound sensor), the sheer number of wires forced me to route everything through a breadboard. Utilizing the vertical internal connections of the breadboard saved a lot of space, but the debugging process was a nightmare.
+Initially, the LCD screen refused to light up (solved by replacing faulty jumper wires). Then, a stray female header shorted against a nearby pin, knocking out the sensor's power (luckily, the MCU survived). 
+After fixing the short, the system crashed with continuous buzzing and a blank screen.
+After systematically disconnecting and checking every wire, I realized my rotary potentiometer was completely worn out from excessive twisting. 
+As a quick workaround, I bypassed the potentiometer and wired a fixed resistor directly to the LCD to set the contrast voltage. The screen lit up perfectly, proving the circuit and code were actually fine.
+I’ve ordered a new potentiometer to finalize the build. Despite the many rebuilds, shorts, and broken components due to my lack of experience, seeing the device finally measure real sound brought me immense joy. It was a painful but incredibly rewarding hardware debugging journey.
