@@ -1,0 +1,104 @@
+#include <reg51.h>
+#include <intrins.h>
+
+// ================= 引脚定义 =================
+// 1. 声音传感器（目前还没接，接的时候 DO 接 P1.0）
+sbit SoundSensor = P1^0;   
+
+// 2. LCD1602 屏幕（直插普中开发板专用引脚）
+sbit LCD_RS = P2^6;        // 直插时 RS 对应 P2.6
+sbit LCD_E  = P2^7;        // 直插时 E 对应 P2.7
+#define LCD_DataPort P0    // 数据线 P0.0 ~ P0.7
+
+// 3. 板载报警部件
+sbit LED  = P2^0;          // 板载 LED（低电平亮）
+sbit BEEP = P2^5;          // 板载蜂鸣器
+
+// ================= 延时函数 =================
+void Delay_ms(unsigned int ms) {
+    unsigned int i, j;
+    for(i=0; i<ms; i++)
+        for(j=0; j<110; j++);
+}
+
+// ================= 蜂鸣器发声函数 =================
+void Beep_Sound(unsigned int duration) {
+    unsigned int i;
+    for(i=0; i<duration*2; i++) {
+        BEEP = ~BEEP;
+        Delay_ms(1);
+    }
+    BEEP = 1;
+}
+
+// ================= LCD1602 驱动 =================
+void LCD_WriteCmd(unsigned char cmd) {
+    LCD_RS = 0; 
+    LCD_DataPort = cmd; 
+    LCD_E = 1; 
+    _nop_(); _nop_(); 
+    LCD_E = 0; 
+    Delay_ms(2);
+}
+
+void LCD_WriteData(unsigned char dat) {
+    LCD_RS = 1; 
+    LCD_DataPort = dat; 
+    LCD_E = 1; 
+    _nop_(); _nop_(); 
+    LCD_E = 0; 
+    Delay_ms(2);
+}
+
+void LCD_Init(void) {
+    Delay_ms(15);
+    LCD_WriteCmd(0x38); // 16*2显示，5*7点阵，8位数据接口
+    LCD_WriteCmd(0x0C); // 显示开，光标关
+    LCD_WriteCmd(0x06); // 读写后指针加1
+    LCD_WriteCmd(0x01); // 清屏
+    Delay_ms(5);
+}
+
+// 在指定行列显示字符串
+void LCD_ShowString(unsigned char row, unsigned char col, unsigned char *str) {
+    unsigned char addr;
+    if(row == 1) addr = 0x00 + (col - 1);
+    else         addr = 0x40 + (col - 1);
+    LCD_WriteCmd(addr | 0x80); 
+    while(*str != '\0') {
+        LCD_WriteData(*str++);
+    }
+}
+
+// ================= 主函数 =================
+void main() {
+    LCD_Init();
+    
+    // 第一行显示系统名称
+    LCD_ShowString(1, 1, "  Noise Monitor "); 
+    
+    SoundSensor = 1; // 初始化引脚
+    LED = 1;         // 初始化：LED灭
+    BEEP = 1;        // 初始化：蜂鸣器关
+
+    while(1) {
+        // 这里判断 == 0（假设有声音时 DO 输出低电平）
+        // 如果等会儿接上传感器发现反了，把 0 改成 1 即可
+        if(SoundSensor == 0) {  
+            
+            // 检测到声音（吵闹）
+            LCD_ShowString(2, 1, "Status: LOUD  ! "); 
+            LED = 0;                                  // 亮灯
+            Beep_Sound(50);                           // 蜂鸣器滴——响
+            
+        } else {
+            
+            // 安静状态
+            LCD_ShowString(2, 1, "Status: QUIET   ");
+            LED = 1;                                  // 灭灯
+            BEEP = 1;                                 // 关蜂鸣器
+            
+        }
+        Delay_ms(100); // 刷新间隔
+    }
+}
